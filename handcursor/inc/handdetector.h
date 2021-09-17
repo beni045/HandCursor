@@ -1,28 +1,39 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
-
+#include "tensorflow/lite/interpreter.h"
+#include "tensorflow/lite/kernels/register.h"
+#include "tensorflow/lite/model.h"
+#include "tensorflow/lite/optional_debug_tools.h"
 
 class HandDetector{       
     private:            
-        const int orig_width, orig_height;  
-        const int resize_width, resize_height;  
+        // Image processing
+        const int orig_width_, orig_height_;  
+        const int resize_width_, resize_height_;  
 
         cv::Mat orig_image;    
 
-        float* input_tensor;
-        float* output_tensor;
+        float* input_tensor_;
+        float* output_tensor_;
+
+        // Inference model
+        std::unique_ptr<tflite::FlatBufferModel> model_;
+        tflite::ops::builtin::BuiltinOpResolver resolver_;
+        std::unique_ptr<tflite::Interpreter> interpreter_;
 
 
     public:
-        HandDetector(int orig_width, int orig_height, int resize_width, int resize_height);
+        HandDetector(int orig_width, int orig_height, int resize_width, int resize_height, std::string filname);
         ~HandDetector();
         
         void Preprocess();
-        float* Process(cv::Mat orig_image);
+        void Inference();
+        void Postprocess();
+        void Process(cv::Mat orig_image);
 
 
 
-        
+
     // Inference();
     // Postprocess();
 

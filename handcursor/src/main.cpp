@@ -29,25 +29,32 @@ int main()
     //     return 0;
     // cap >> orig_image;  
 
-    std::string image_path = "/home/beni045/Documents/HandCursor_local/HandCursor/handcursor/src/hand_sample.jpg";
+    string image_path = "/home/beni045/Documents/HandCursor_local/HandCursor/handcursor/src/sample_hand2.jpg";
+    string palm_detector_path = "/home/beni045/Documents/HandCursor_local/HandCursor/models/palm_detection_without_custom_op.tflite";
+    const int resize_width = 256;
+    const int resize_height = 256;
+
+
     Mat orig_image = imread(image_path, IMREAD_COLOR);
     if(orig_image.empty())
     {
-        std::cout << "Could not read the image: " << image_path << std::endl;
+        cout << "Could not read the image: " << image_path << endl;
         return 1;
     }
 
     const unsigned int orig_width = orig_image.cols;
     const unsigned int orig_height = orig_image.rows;
 
-    HandDetector handdetector(orig_width, orig_height, 128, 128);
+    HandDetector handdetector(orig_width, orig_height, resize_width, resize_height, palm_detector_path);
     // KeypointDetector keypointdetector();
 
-    float* input_tensor = handdetector.Process(orig_image);
+    // float* input_tensor = handdetector.Process(orig_image);
 
-    for(int x=0; x < 10; x++){
-        cout << input_tensor[x] << endl;
-    }
+    // for(int x=0; x < 10; x++){
+    //     cout << input_tensor[x] << endl;
+    // }
+
+    handdetector.Process(orig_image);
 
     // cout << handdetector.orig_width << endl;
 
