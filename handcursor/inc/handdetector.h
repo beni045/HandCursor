@@ -16,7 +16,7 @@ class HandDetector{
         cv::Mat orig_image_;    
 
         float* input_tensor_;
-        float* output_tensor_;
+        float* output_tensor1_;
         float* output_tensor2_;
 
         std::vector<float> anchors_;

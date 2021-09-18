@@ -37,8 +37,8 @@ resize_height_(resize_height)
     TFLITE_MINIMAL_CHECK(interpreter_->AllocateTensors() == kTfLiteOk);
 
     input_tensor_ = interpreter_->typed_input_tensor<float>(0);
-    output_tensor_ = interpreter_->typed_output_tensor<float>(0);
-    //output_tensor2_ = interpreter_->typed_output_tensor<float>(14);
+    output_tensor1_ = interpreter_->typed_output_tensor<float>(0);
+    output_tensor2_ = interpreter_->typed_output_tensor<float>(1);
 
     // tflite::PrintInterpreterState(interpreter_.get());
 
@@ -71,13 +71,9 @@ void HandDetector::Preprocess(){
     // Copy mat data to input tensor buffer
     std::size_t input_buffer_size = resized_rgb_normalized.total() * resized_rgb_normalized.elemSize();
 
-    float* mat_ptr = resized_rgb_normalized.ptr<float>(0);
-
-    for(int x = 0; x < 20; x++){
-        std::cout << "input img: " << mat_ptr[x] << std::endl;
-    }
+    float* preproc_mat = resized_rgb_normalized.ptr<float>(0);
     
-    memcpy(HandDetector::input_tensor_, (float*)resized_rgb_normalized.data, input_buffer_size);
+    memcpy(HandDetector::input_tensor_, preproc_mat, input_buffer_size);
 }
 
 void HandDetector::Inference(){
@@ -89,36 +85,29 @@ void HandDetector::Postprocess(){
     // 1x2944x18 tensor of anchors
     // 1x2944 tensor of confidence for each anchor
 
-    // To postprocess, let's loop through the confidence tensor and find the index of the highest one
-    // Which index to start at? 2944*18 to find starting index
-
-    // This method should return a bounding box and 7 initial keypoints for the hand/palm
-
     const int num_anchors = 2944;
     const int anchor_size = 18;
-    const int first_output_size = num_anchors * anchor_size;
-    const int total_size = first_output_size + 2944;
-    const double threshold_val = 0.99;
+    const double threshold_val = 0.7;
 
-    // std::vector<int> threshold_idx;
+    std::vector<int> threshold_idx;
 
 
-    // for (int x=first_output_size; x < total_size; x++){
-    //     double sigm = sigmoidfunc(double(output_tensor_[x]));
-    //     if (sigm > threshold_val){
-    //         threshold_idx.push_back(x-first_output_size);
-    //     }
-    //     //std::cout << "x: " << x - first_output_size << "  sigm: " << sigm << std::endl;
-    // }
-    // // std::cout << "threshold idx size: " << threshold_idx.size() << std::endl;
+    for (int x=0; x < num_anchors; x++){
+        double sigm = sigmoidfunc(double(output_tensor2_[x]));
+        if (sigm > threshold_val){
+            threshold_idx.push_back(x);
+        }
+        //std::cout << "x: " << x - first_output_size << "  sigm: " << sigm << std::endl;
+    }
+    std::cout << "threshold idx size: " << threshold_idx.size() << std::endl;
 
     // for(int x= 0; x < 5; x++){
     //     std::cout << "output cls: " << output_tensor2_[x] << std::endl;
     // }
 
-    for(int x= (125*125); x < (125*125 + 20); x++){
-        std::cout << "input tensor : " << input_tensor_[x] << std::endl;
-    }
+    // for(int x= 0; x < 10; x++){
+    //     std::cout << "input tensor : " << input_tensor_[x] << std::endl;
+    // }
   
 
     // IF NO IDX ABOVE THRESHOLD (SIZE = 0), RETURN NO HAND!
@@ -126,18 +115,24 @@ void HandDetector::Postprocess(){
 
     // find argmax for widest box in candidate detect (dim 3)
 
-    // int widest_box_idx = FindWidest(threshold_idx);
+    int widest_box_idx = FindWidest(threshold_idx);
 
-    // std::cout << "widest box idx: " << widest_box_idx << std::endl;
+    std::cout << "widest box idx: " << widest_box_idx << std::endl;
 
 
     // find anchor for that index
 
-    // cv::Rect bbox = FindBbox(widest_box_idx);
-    // DrawBboxOrig(bbox);
+    cv::Rect bbox = FindBbox(widest_box_idx);
+    DrawBboxOrig(bbox);
     
-    
-    //cv::imshow("test", HandDetector::orig_image_); cv::waitKey(0);
+    cv::Mat resize_show;
+
+    cv::resize(HandDetector::orig_image_, 
+             resize_show, 
+             cv::Size(500, 500), 
+             cv::INTER_LINEAR);
+
+    cv::imshow("test", resize_show); cv::waitKey(0);
 
     // find bounding box based on anchor and bbox from output
 
@@ -181,8 +176,8 @@ void HandDetector::Postprocess(){
     float max = 0.0;
     int max_index;
     for(int x=first_output_size; x < total_size; x++){
-        if(HandDetector::output_tensor_[x] > max){
-            max = HandDetector::output_tensor_[x];
+        if(HandDetector::output_tensor1_[x] > max){
+            max = HandDetector::output_tensor1_[x];
             max_index = x;
         }
     }
@@ -195,7 +190,7 @@ void HandDetector::Postprocess(){
     const int best_anchor_index_first_output = best_anchor_index * anchor_size;
 
     for(int x=0; x < 18; x++){
-        std::cout << "Anchor index " << x << " value: " << HandDetector::output_tensor_[x+best_anchor_index_first_output] << std::endl;
+        std::cout << "Anchor index " << x << " value: " << HandDetector::output_tensor1_[x+best_anchor_index_first_output] << std::endl;
     }
 
     std::vector<cv::Point> points;
@@ -205,18 +200,18 @@ void HandDetector::Postprocess(){
 
     // for(int x=0; x < 18/2; x+=2){
     //     cv::Point p;
-    //     p.x = std::round(HandDetector::output_tensor_[x+best_anchor_index_first_output] * scale_width); // + orig_width_ / 2;
-    //     p.y = std::round(HandDetector::output_tensor_[x+best_anchor_index_first_output+1] * scale_height); // + orig_height_ / 2;
+    //     p.x = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output] * scale_width); // + orig_width_ / 2;
+    //     p.y = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+1] * scale_height); // + orig_height_ / 2;
     //     points.push_back(p);
     // }
 
     for(int x=0; x < 18/2; x+=4){
         cv::Point p1;
         cv::Point p2;
-        p1.x = std::round(HandDetector::output_tensor_[x+best_anchor_index_first_output] * scale_width); // + orig_width_ / 2;
-        p1.y = std::round(HandDetector::output_tensor_[x+best_anchor_index_first_output+1] * scale_height); // + orig_height_ / 2;
-        p2.x = p1.x + std::round(HandDetector::output_tensor_[x+best_anchor_index_first_output+2] * scale_width); // + orig_width_ / 2;
-        p2.y = p1.y + std::round(HandDetector::output_tensor_[x+best_anchor_index_first_output+3] * scale_height); // + orig_height_ / 2;
+        p1.x = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output] * scale_width); // + orig_width_ / 2;
+        p1.y = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+1] * scale_height); // + orig_height_ / 2;
+        p2.x = p1.x + std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+2] * scale_width); // + orig_width_ / 2;
+        p2.y = p1.y + std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+3] * scale_height); // + orig_height_ / 2;
 
 
         points.push_back(p1);
@@ -246,7 +241,10 @@ int HandDetector::FindWidest(std::vector<int> thresh_idxs){
     float max = 0;
     int max_idx = 0;
     for(int i : thresh_idxs){
-        if (output_tensor_[(i*18)+3] > max){
+        std::cout << "idx: " << i << "  width: " << output_tensor1_[(i*18)+3] << std::endl;
+
+        if (output_tensor1_[(i*18)+3] > max){
+            max = output_tensor1_[(i*18)+3];
             max_idx = i;
         }
     }
@@ -265,16 +263,16 @@ cv::Rect HandDetector::FindBbox(int widest_idx){
     center.y = anchors_[(widest_idx * 2)+1] * 256;
 
     // Find shifted center based on model output
-    center.x += output_tensor_[widest_idx*18];
-    center.y += output_tensor_[(widest_idx*18)+1];
+    center.x += output_tensor1_[widest_idx*18];
+    center.y += output_tensor1_[(widest_idx*18)+1];
 
     cv::Point topLeft;
     cv::Point bottomRight;
 
     // Shift center based on width,height of box to find points
     // Also scale to orig image coordinates and convert to int
-    float shift_x = output_tensor_[((widest_idx*18)+2)/2];
-    float shift_y = output_tensor_[((widest_idx*18)+3)/2];
+    float shift_x = output_tensor1_[((widest_idx*18)+2)/2];
+    float shift_y = output_tensor1_[((widest_idx*18)+3)/2];
     topLeft.x = int((center.x + shift_x) * scale_orig_x);
     topLeft.y = int((center.y + shift_y) * scale_orig_y);
     bottomRight.x = int((center.x - shift_x) * scale_orig_x);
