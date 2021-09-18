@@ -5,16 +5,24 @@
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 
+#define ANCHORS_LENGTH 2944
+
 class HandDetector{       
     private:            
         // Image processing
         const int orig_width_, orig_height_;  
         const int resize_width_, resize_height_;  
 
-        cv::Mat orig_image;    
+        cv::Mat orig_image_;    
 
         float* input_tensor_;
         float* output_tensor_;
+        float* output_tensor2_;
+
+        std::vector<float> anchors_;
+
+
+
 
         // Inference model
         std::unique_ptr<tflite::FlatBufferModel> model_;
@@ -26,9 +34,18 @@ class HandDetector{
         HandDetector(int orig_width, int orig_height, int resize_width, int resize_height, std::string filname);
         ~HandDetector();
         
+        std::vector<float> LoadAnchors(std::string filepath);
+
         void Preprocess();
         void Inference();
         void Postprocess();
+
+        int FindWidest(std::vector<int> threshold_idxs);
+
+        cv::Rect FindBbox(int widest_idx);
+
+        void DrawBboxOrig(cv::Rect rectangle);
+
         void Process(cv::Mat orig_image);
 
 
@@ -49,3 +66,5 @@ class HandDetector{
     // postprocess output
 
 };
+
+

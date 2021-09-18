@@ -29,7 +29,7 @@ int main()
     //     return 0;
     // cap >> orig_image;  
 
-    string image_path = "/home/beni045/Documents/HandCursor_local/HandCursor/handcursor/src/sample_hand2.jpg";
+    string image_path = "/home/beni045/Documents/HandCursor_local/HandCursor/handcursor/src/sample_hand3.jpg";
     string palm_detector_path = "/home/beni045/Documents/HandCursor_local/HandCursor/models/palm_detection_without_custom_op.tflite";
     const int resize_width = 256;
     const int resize_height = 256;
