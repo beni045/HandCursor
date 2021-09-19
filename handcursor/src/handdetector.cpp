@@ -92,7 +92,7 @@ void HandDetector::Postprocess(){
         }
         //std::cout << "x: " << x - first_output_size << "  sigm: " << sigm << std::endl;
     }
-    std::cout << "threshold idx size: " << threshold_idx.size() << std::endl;
+
 
     // for(int x= 0; x < 5; x++){
     //     std::cout << "output cls: " << output_tensor2_[x] << std::endl;
@@ -110,7 +110,6 @@ void HandDetector::Postprocess(){
 
     int widest_box_idx = FindWidest(threshold_idx);
 
-    std::cout << "widest box idx: " << widest_box_idx << std::endl;
 
 
     // find anchor for that index
@@ -128,18 +127,19 @@ void HandDetector::Postprocess(){
 
     }
 
+    cv::Mat transformed = TransformPalm(keypoints[0], keypoints[2], 0.7);
 
-    
-    cv::Mat resize_show;
 
-    cv::resize(HandDetector::orig_image_, 
-             resize_show, 
-             cv::Size(500, 500), 
-             cv::INTER_LINEAR);
+    cv::imshow("transformed", transformed); cv::waitKey(0);
 
-    cv::imshow("test", resize_show); cv::waitKey(0);
+    // cv::resize(HandDetector::orig_image_, 
+    //          resize_show, 
+    //          cv::Size(500, 500), 
+    //          cv::INTER_LINEAR);
 
-    cv::imshow("orig", orig_image_); cv::waitKey(0);
+    // cv::imshow("test", resize_show); cv::waitKey(0);
+
+    // cv::imshow("orig", orig_image_); cv::waitKey(0);
 
     // find bounding box based on anchor and bbox from output
 
@@ -204,6 +204,39 @@ std::vector<cv::Point> HandDetector::FindKeypoints(int widest_idx){
 
     return keypoints;
 }
+
+cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, float thirdpoint_scale){
+    cv::Mat rotated = cv::Mat::zeros(orig_image_.rows, 
+                                         orig_image_.cols, 
+                                         orig_image_.type() );
+        
+    // Set wrist to origin
+    cv::Point wrist_to_middle = middlefinger - wrist;
+    cv::Point vertical(0,1);
+
+    // Find angle between wrist to middle and vertical
+    float angle = -angleBetween(vertical, wrist_to_middle);
+    float scale = 1;
+
+    //Apply rotation transform
+    cv::Mat rot_mat = cv::getRotationMatrix2D(wrist, angle, scale);
+    cv::warpAffine(orig_image_, rotated, rot_mat, rotated.size());
+
+
+    // Crop based on wrist
+    float dist_wrist_middle = cv::norm(wrist - middlefinger);
+
+    float cropHeight = dist_wrist_middle * 2;
+    float cropWidth = dist_wrist_middle * 2.2;
+
+    cv::Rect myROI(wrist.x - cropWidth/2, wrist.y - cropHeight*0.85, cropWidth, cropHeight);
+    cv::Mat croppedImage = rotated(myROI);   
+
+    return croppedImage;
+}
+
+
+
 
 cv::Rect HandDetector::FindBbox(int widest_idx){
     const float scale_orig_x = orig_width_ / resize_width_;

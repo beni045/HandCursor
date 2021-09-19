@@ -44,6 +44,7 @@ class HandDetector{
 
         cv::Rect FindBbox(int widest_idx);
         std::vector<cv::Point> FindKeypoints(int widest_idx);
+        cv::Mat TransformPalm(cv::Point wrist, cv::Point middlefinger, float thirdpoint_scale);
 
         void DrawBboxOrig(cv::Rect rectangle);
 
