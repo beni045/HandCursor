@@ -43,6 +43,7 @@ class HandDetector{
         int FindWidest(std::vector<int> threshold_idxs);
 
         cv::Rect FindBbox(int widest_idx);
+        std::vector<cv::Point> FindKeypoints(int widest_idx);
 
         void DrawBboxOrig(cv::Rect rectangle);
 

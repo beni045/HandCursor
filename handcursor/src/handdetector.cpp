@@ -50,13 +50,6 @@ HandDetector::~HandDetector(){
 }
 
 void HandDetector::Preprocess(){
-    // STEPS
-    // - resize orig_img
-    // - change color space
-    // - regularize 
-    // - copy to model input buffer
-    // - 
-
    cv::Mat resized, resized_rgb, resized_rgb_normalized;
 
    cv::resize(HandDetector::orig_image_, 
@@ -122,8 +115,20 @@ void HandDetector::Postprocess(){
 
     // find anchor for that index
 
-    cv::Rect bbox = FindBbox(widest_box_idx);
-    DrawBboxOrig(bbox);
+    // cv::Rect bbox = FindBbox(widest_box_idx);
+    // DrawBboxOrig(bbox);
+
+    std::vector<cv::Point> keypoints = FindKeypoints(widest_box_idx);
+
+    int i = 0;
+    for(auto kp : keypoints){
+        cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);
+        cv::putText(orig_image_,std::to_string(i),kp,cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
+        i++;
+
+    }
+
+
     
     cv::Mat resize_show;
 
@@ -133,6 +138,8 @@ void HandDetector::Postprocess(){
              cv::INTER_LINEAR);
 
     cv::imshow("test", resize_show); cv::waitKey(0);
+
+    cv::imshow("orig", orig_image_); cv::waitKey(0);
 
     // find bounding box based on anchor and bbox from output
 
@@ -158,85 +165,6 @@ void HandDetector::Postprocess(){
 }
 
 
-
-
-/*
-void HandDetector::Postprocess(){
-    // Model output is the following:
-    // 1x896x18 tensor of anchors
-    // 1x896 tensor of confidence for each anchor
-
-    // To postprocess, let's loop through the confidence tensor and find the index of the highest one
-    // Which index to start at? 896*18 to find starting index
-    const int num_anchors = 896;
-    const int anchor_size = 18;
-    const int first_output_size = num_anchors * anchor_size;
-    const int total_size = first_output_size + 896;
-
-    float max = 0.0;
-    int max_index;
-    for(int x=first_output_size; x < total_size; x++){
-        if(HandDetector::output_tensor1_[x] > max){
-            max = HandDetector::output_tensor1_[x];
-            max_index = x;
-        }
-    }
-
-    std::cout << "Most confident anchor at index: " << max_index - first_output_size<< std::endl;
-    std::cout << "Most confident anchor value   : " << max << std::endl;
-
-    // Print most anchor values of bet index
-    const int best_anchor_index = max_index - first_output_size;
-    const int best_anchor_index_first_output = best_anchor_index * anchor_size;
-
-    for(int x=0; x < 18; x++){
-        std::cout << "Anchor index " << x << " value: " << HandDetector::output_tensor1_[x+best_anchor_index_first_output] << std::endl;
-    }
-
-    std::vector<cv::Point> points;
-
-    const float scale_width = float(orig_width_) / float(resize_width_);
-    const float scale_height = float(orig_height_) / float(resize_height_);
-
-    // for(int x=0; x < 18/2; x+=2){
-    //     cv::Point p;
-    //     p.x = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output] * scale_width); // + orig_width_ / 2;
-    //     p.y = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+1] * scale_height); // + orig_height_ / 2;
-    //     points.push_back(p);
-    // }
-
-    for(int x=0; x < 18/2; x+=4){
-        cv::Point p1;
-        cv::Point p2;
-        p1.x = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output] * scale_width); // + orig_width_ / 2;
-        p1.y = std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+1] * scale_height); // + orig_height_ / 2;
-        p2.x = p1.x + std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+2] * scale_width); // + orig_width_ / 2;
-        p2.y = p1.y + std::round(HandDetector::output_tensor1_[x+best_anchor_index_first_output+3] * scale_height); // + orig_height_ / 2;
-
-
-        points.push_back(p1);
-        points.push_back(p2);
-    }
-    
-
-    cv::Scalar red( 255, 0, 0 );
-
-    // for(int x=0; x < points.size(); x++){
-    //     cv::circle(HandDetector::orig_image_, points[x], 7, red, cv::FILLED);
-    // }
-
-    for(int x=0; x < points.size(); x+=2){
-        cv::rectangle(HandDetector::orig_image_, points[x], points[x+1], red);
-    }
-    // draw on original image to see output
-
-    std::cout << scale_width << std::endl;
-    std::cout << scale_height << std::endl;
-
-    cv::imshow("test", HandDetector::orig_image_); cv::waitKey(0);
-} */
-
-
 int HandDetector::FindWidest(std::vector<int> thresh_idxs){
     float max = 0;
     int max_idx = 0;
@@ -251,6 +179,31 @@ int HandDetector::FindWidest(std::vector<int> thresh_idxs){
     return max_idx;
 }
 
+
+std::vector<cv::Point> HandDetector::FindKeypoints(int widest_idx){
+    const float scale_orig_x = orig_width_ / resize_width_;
+    const float scale_orig_y = orig_height_ / resize_height_;
+
+    cv::Point center;
+
+    // Find center of anchor box
+    center.x = anchors_[widest_idx * 2] * 256;
+    center.y = anchors_[(widest_idx * 2)+1] * 256;
+
+    std::cout << "Center anchors: " << center << std::endl;
+
+    // Get all 7 keypoints
+    std::vector<cv::Point> keypoints;
+    // Keypoints are between [widest_idx, 4:]
+    for(int x = widest_idx*18 + 4; x < widest_idx*18 + 18; x+=2){
+        cv::Point p;
+        p.x = (output_tensor1_[x] + center.x) * scale_orig_x;
+        p.y = (output_tensor1_[x+1] + center.y) * scale_orig_y;
+        keypoints.push_back(p);
+    }
+
+    return keypoints;
+}
 
 cv::Rect HandDetector::FindBbox(int widest_idx){
     const float scale_orig_x = orig_width_ / resize_width_;
@@ -271,8 +224,8 @@ cv::Rect HandDetector::FindBbox(int widest_idx){
 
     // Shift center based on width,height of box to find points
     // Also scale to orig image coordinates and convert to int
-    float shift_x = output_tensor1_[((widest_idx*18)+2)/2];
-    float shift_y = output_tensor1_[((widest_idx*18)+3)/2];
+    float shift_x = output_tensor1_[(widest_idx*18)+2] / 2;
+    float shift_y = output_tensor1_[(widest_idx*18)+3] / 2;
     topLeft.x = int((center.x + shift_x) * scale_orig_x);
     topLeft.y = int((center.y + shift_y) * scale_orig_y);
     bottomRight.x = int((center.x - shift_x) * scale_orig_x);
@@ -282,9 +235,10 @@ cv::Rect HandDetector::FindBbox(int widest_idx){
     return bbox;
 }
 
+
 void HandDetector::DrawBboxOrig(cv::Rect bbox){
-    cv::Scalar red( 0, 0, 255);
-    cv::rectangle(orig_image_, bbox, red);
+    cv::Scalar green( 0, 255, 0);
+    cv::rectangle(orig_image_, bbox, green, 5);
 }
 
 
@@ -294,8 +248,6 @@ void HandDetector::Process(cv::Mat orig_image_){
     Inference();
     Postprocess();
 }
-
-
 
 
 std::vector<float> HandDetector::LoadAnchors(std::string filepath){
