@@ -129,8 +129,9 @@ void HandDetector::Postprocess(){
 
     cv::Mat transformed = TransformPalm(keypoints[0], keypoints[2], 0.7);
 
+    cv::imwrite("crop.jpg", transformed);
 
-    cv::imshow("transformed", transformed); cv::waitKey(0);
+    // cv::imshow("transformed", transformed); cv::waitKey(0);
 
     // cv::resize(HandDetector::orig_image_, 
     //          resize_show, 
@@ -169,8 +170,6 @@ int HandDetector::FindWidest(std::vector<int> thresh_idxs){
     float max = 0;
     int max_idx = 0;
     for(int i : thresh_idxs){
-        std::cout << "idx: " << i << "  width: " << output_tensor1_[(i*18)+3] << std::endl;
-
         if (output_tensor1_[(i*18)+3] > max){
             max = output_tensor1_[(i*18)+3];
             max_idx = i;
@@ -189,8 +188,6 @@ std::vector<cv::Point> HandDetector::FindKeypoints(int widest_idx){
     // Find center of anchor box
     center.x = anchors_[widest_idx * 2] * 256;
     center.y = anchors_[(widest_idx * 2)+1] * 256;
-
-    std::cout << "Center anchors: " << center << std::endl;
 
     // Get all 7 keypoints
     std::vector<cv::Point> keypoints;
@@ -212,25 +209,61 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
         
     // Set wrist to origin
     cv::Point wrist_to_middle = middlefinger - wrist;
-    cv::Point vertical(0,1);
+    cv::Point vertical(0, 1);
 
     // Find angle between wrist to middle and vertical
-    float angle = -angleBetween(vertical, wrist_to_middle);
-    float scale = 1;
+    // and rotate based on orientation (hand should always point upward)
+    float angle = angleBetween(vertical, wrist_to_middle);
+    if (wrist.x < middlefinger.x){
+        angle = angleBetween(vertical, wrist_to_middle);
+        if (angle > 90){
+            angle = 180 - angle;
+        }
+    }
+    else {
+        angle = -angleBetween(vertical, wrist_to_middle);
+        if (angle < -90){
+            angle = -180 - angle;
+        }
+    }
 
     //Apply rotation transform
-    cv::Mat rot_mat = cv::getRotationMatrix2D(wrist, angle, scale);
+    cv::Mat rot_mat = cv::getRotationMatrix2D(wrist, angle, 1);
     cv::warpAffine(orig_image_, rotated, rot_mat, rotated.size());
 
 
-    // Crop based on wrist
+    /* ---Crop based on wrist--- 
+    ------------------------------*/
     float dist_wrist_middle = cv::norm(wrist - middlefinger);
 
+    // Heuristic crop params scaled from distance between
+    // wrist and middle finger
     float cropHeight = dist_wrist_middle * 2;
     float cropWidth = dist_wrist_middle * 2.2;
+    float x_offset = wrist.x - cropWidth/2;
+    float y_offset = wrist.y - cropHeight*0.85;
 
-    cv::Rect myROI(wrist.x - cropWidth/2, wrist.y - cropHeight*0.85, cropWidth, cropHeight);
-    cv::Mat croppedImage = rotated(myROI);   
+    // Limit crop size
+    if (x_offset > orig_image_.cols){
+        x_offset = orig_image_.cols - 1;
+    }
+    else if(x_offset < 0){
+        x_offset = 1;
+    }
+    if (y_offset > orig_image_.rows){
+        y_offset = orig_image_.rows - 1;
+    }
+    else if(y_offset < 0){
+        y_offset = 1;
+    }
+    if ((x_offset + cropWidth) > orig_image_.cols){
+        cropWidth = orig_image_.cols - x_offset - 1;
+    }
+    if ((y_offset + cropHeight) > orig_image_.rows){
+        cropHeight = orig_image_.rows - y_offset - 1;
+    }
+    cv::Rect ROI(x_offset, y_offset, cropWidth, cropHeight);
+    cv::Mat croppedImage = rotated(ROI);   
 
     return croppedImage;
 }
