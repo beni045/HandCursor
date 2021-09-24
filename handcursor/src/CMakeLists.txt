@@ -12,5 +12,5 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../tflite-dist/include/ ${Ope
 ADD_LIBRARY(tensorflowlite SHARED IMPORTED)
 set_property(TARGET tensorflowlite PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../../tflite-dist/libs/linux_x64/libtensorflowlite.so)
 
-add_executable(HandCursor.o main.cpp modelprocessor.cpp handdetector.cpp)
+add_executable(HandCursor.o main.cpp modelprocessor.cpp handdetector.cpp keypointdetector.cpp)
 target_link_libraries(HandCursor.o tensorflowlite ${OpenCV_LIBS})

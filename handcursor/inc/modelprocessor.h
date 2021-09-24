@@ -4,17 +4,18 @@
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
-
+#pragma once
 
 class ModelProcessor{       
     protected:            
         // Image processing
-        const int orig_width_, orig_height_;  
+        int orig_width_, orig_height_;  
         const int resize_width_, resize_height_;  
 
         cv::Mat orig_image_;    
 
         float* input_tensor_;
+        
         float* output_tensor1_;
         float* output_tensor2_;
 
@@ -25,13 +26,14 @@ class ModelProcessor{
 
 
     public:
-        ModelProcessor(int orig_width, int orig_height, int resize_width, int resize_height, std::string filname);
+        ModelProcessor(int resize_width, int resize_height, std::string filname);
         ~ModelProcessor();
         
         void Process(cv::Mat orig_image);
-
+   
     protected:
         virtual void Preprocess() = 0;
         void Inference();
         virtual void Postprocess() = 0;
+        
 };

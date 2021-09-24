@@ -13,14 +13,10 @@
 #define ANCHORS_PATH "/home/beni045/Documents/HandCursor_local/HandCursor/models/anchors.csv"
 
 
-HandDetector::HandDetector(int orig_width, 
-                           int orig_height, 
-                           int resize_width, 
+HandDetector::HandDetector(int resize_width, 
                            int resize_height, 
                            std::string model_path)
-                           :ModelProcessor(orig_width, 
-                                           orig_height, 
-                                           resize_width, 
+                           :ModelProcessor(resize_width, 
                                            resize_height,
                                            model_path)
 {
@@ -63,29 +59,28 @@ void HandDetector::Postprocess(){
 
     std::vector<int> threshold_idx;
 
-
     for (int x=0; x < num_anchors; x++){
         double sigm = sigmoidfunc(double(output_tensor2_[x]));
         if (sigm > threshold_val){
             threshold_idx.push_back(x);
         }
     }
-
+    
     int widest_box_idx = FindWidest(threshold_idx);
 
     std::vector<cv::Point> keypoints = FindKeypoints(widest_box_idx);
 
     int i = 0;
     for(auto kp : keypoints){
-        cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);
-        cv::putText(orig_image_,std::to_string(i),kp,cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
+        // cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);
+        // cv::putText(orig_image_,std::to_string(i),kp,cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
         i++;
 
     }
 
     cv::Mat transformed = TransformPalm(keypoints[0], keypoints[2], 0.7);
 
-    cv::imwrite("crop.jpg", transformed);
+    result_ = transformed;
 }
 
 
@@ -153,7 +148,7 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
     }
 
     //Apply rotation transform
-    cv::Mat rot_mat = cv::getRotationMatrix2D(wrist, angle, 1);
+    cv::Mat rot_mat = cv::getRotationMatrix2D(wrist, angle, 0.9);   // TODO: test this scale
     cv::warpAffine(orig_image_, rotated, rot_mat, rotated.size());
 
 
@@ -215,4 +210,8 @@ std::vector<float> HandDetector::LoadAnchors(std::string filepath){
     }
 
     return anchors;
+}
+
+cv::Mat HandDetector::GetResult(){
+    return result_;
 }

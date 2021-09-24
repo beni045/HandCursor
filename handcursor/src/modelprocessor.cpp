@@ -16,10 +16,8 @@
     exit(1);                                                 \
   }
 
-ModelProcessor::ModelProcessor(int orig_width, int orig_height, int resize_width, int resize_height, std::string model_path)
+ModelProcessor::ModelProcessor(int resize_width, int resize_height, std::string model_path)
 :
-orig_width_(orig_width),
-orig_height_(orig_height),
 resize_width_(resize_width),
 resize_height_(resize_height)
 {
@@ -51,6 +49,8 @@ void ModelProcessor::Postprocess(){
 
 void ModelProcessor::Process(cv::Mat orig_image){
     orig_image_ = orig_image;
+    orig_width_ = orig_image.cols;
+    orig_height_ = orig_image.rows;
     Preprocess();
     Inference();
     Postprocess();

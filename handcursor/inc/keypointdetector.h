@@ -7,13 +7,9 @@
 #include "modelprocessor.h"
 
 
-class HandDetector : public ModelProcessor {       
+class KeypointDetector : public ModelProcessor {       
     private:            
-        std::vector<float> anchors_;
-        std::vector<float> LoadAnchors(std::string filepath);
-        cv::Mat result_;
-
-        void ExtraSetup();
+        float* output_tensor3_;
 
         void Preprocess();
         void Postprocess();
@@ -24,8 +20,5 @@ class HandDetector : public ModelProcessor {
         cv::Mat TransformPalm(cv::Point wrist, cv::Point middlefinger, float thirdpoint_scale);
 
     public:
-        HandDetector(int resize_width, int resize_height, std::string model_path);
-        cv::Mat GetResult();
+        KeypointDetector(int resize_width, int resize_height, std::string model_path);
 };
-
-
