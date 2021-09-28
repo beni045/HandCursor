@@ -66,7 +66,7 @@ int main()
            //    cout << "Kps: " << p << endl;
            //}
            //cout << "\n transormed: " << endl;
-           //handdetector.TransformBack(final_kps);
+           handdetector.TransformBack(final_kps);
            for (auto p : final_kps) {
                cv::circle(frame, p, 10, Scalar(0, 255, 0), cv::FILLED, 8, 0);
                //cout << "Kps: " << p << endl;
