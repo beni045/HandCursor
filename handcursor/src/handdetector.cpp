@@ -1,6 +1,7 @@
 #include <handdetector.h>
-#include <opencv2/highgui.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
+//#include <opencv2/highgui.hpp>
+//#include "opencv2/imgproc/imgproc.hpp"
+#include <opencv2/opencv.hpp>
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
@@ -10,7 +11,7 @@
 #include <utils.h>
 #include <cstdio>
 
-#define ANCHORS_PATH "/home/beni045/Documents/HandCursor_local/HandCursor/models/anchors.csv"
+#define ANCHORS_PATH "C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/models/anchors.csv"
 
 
 HandDetector::HandDetector(int resize_width, 
@@ -72,8 +73,8 @@ void HandDetector::Postprocess(){
 
     int i = 0;
     for(auto kp : keypoints){
-        // cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);
-        // cv::putText(orig_image_,std::to_string(i),kp,cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
+        //cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);
+        //cv::putText(orig_image_,std::to_string(i),kp,cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
         i++;
 
     }
@@ -81,6 +82,7 @@ void HandDetector::Postprocess(){
     cv::Mat transformed = TransformPalm(keypoints[0], keypoints[2], 0.7);
 
     result_ = transformed;
+    // result_ = orig_image_;
 }
 
 
@@ -99,8 +101,8 @@ int HandDetector::FindWidest(std::vector<int> thresh_idxs){
 
 
 std::vector<cv::Point> HandDetector::FindKeypoints(int widest_idx){
-    const float scale_orig_x = orig_width_ / resize_width_;
-    const float scale_orig_y = orig_height_ / resize_height_;
+    const float scale_orig_x = float(orig_width_) / float(resize_width_);
+    const float scale_orig_y = float(orig_height_) / float(resize_height_);
 
     cv::Point center;
 
@@ -147,8 +149,12 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
         }
     }
 
+    // Save wrist as center of rotation and angle for transformback of kps
+    transdata_.center = wrist;
+    transdata_.angleRad = (double(angle) / RAD_TO_DEG);
+
     //Apply rotation transform
-    cv::Mat rot_mat = cv::getRotationMatrix2D(wrist, angle, 0.9);   // TODO: test this scale
+    cv::Mat rot_mat = cv::getRotationMatrix2D(wrist, angle, 1);   // TODO: test this scale
     cv::warpAffine(orig_image_, rotated, rot_mat, rotated.size());
 
 
@@ -158,10 +164,13 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
 
     // Heuristic crop params scaled from distance between
     // wrist and middle finger
-    float cropHeight = dist_wrist_middle * 2;
-    float cropWidth = dist_wrist_middle * 2.2;
-    float x_offset = wrist.x - cropWidth/2;
-    float y_offset = wrist.y - cropHeight*0.85;
+    float cropHeight = dist_wrist_middle * 2.5;
+    float cropWidth = dist_wrist_middle * 2.5;
+    float x_offset = wrist.x - cropWidth / 2;
+    float y_offset = (wrist.y - cropHeight * 0.85) * 0.9; // make sure theres some space below wrist
+
+    // Save offsets for later transformback of keypoints
+    transdata_.offset = cv::Point2f(x_offset, y_offset);
 
     // Limit crop size
     if (x_offset > orig_image_.cols){
@@ -186,8 +195,17 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
     cv::Mat croppedImage = rotated(ROI);   
 
     return croppedImage;
+    //return rotated;
 }
 
+void HandDetector::TransformBack(std::vector<cv::Point2f>& inPoints) {
+    // Translate points by crop offset
+    // Rotate points back based on angle and wrist as center (same as before)
+    for (auto& p : inPoints) {
+        p += HandDetector::transdata_.offset;
+        p = rotatePoint(p, transdata_.center, transdata_.angleRad);
+    }
+}
 
 std::vector<float> HandDetector::LoadAnchors(std::string filepath){
     std::vector<float> anchors;
@@ -197,7 +215,7 @@ std::vector<float> HandDetector::LoadAnchors(std::string filepath){
     
     // TODO: refactor error handling
     if(!myFile){
-        std::cout << "fail to open file" << std::endl;
+        std::cout << "fail to open anchor file" << std::endl;
     }
 
     int idx = 0;

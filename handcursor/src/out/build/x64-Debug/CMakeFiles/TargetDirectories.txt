@@ -1,0 +1,3 @@
+C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/handcursor/src/out/build/x64-Debug/CMakeFiles/HandCursor.dir
+C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/handcursor/src/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/handcursor/src/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir

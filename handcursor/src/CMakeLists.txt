@@ -1,16 +1,21 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.15)
 project(HandCursor)
 
-set(CMAKE_CXX_STANDARD 17)
-
-find_package(OpenCV REQUIRED)
+set(CMAKE_CXX_STANDARD 14)
 
 # include has 2 subdirectories: tensorflow and flatbuffers
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../tflite-dist/include/ ${OpenCV_INCLUDE_DIRS} ../inc)
 
-# lib has 1 file: libtensorflowlite.so
-ADD_LIBRARY(tensorflowlite SHARED IMPORTED)
-set_property(TARGET tensorflowlite PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../../tflite-dist/libs/linux_x64/libtensorflowlite.so)
+find_package(OpenCV REQUIRED)
 
-add_executable(HandCursor.o main.cpp modelprocessor.cpp handdetector.cpp keypointdetector.cpp)
-target_link_libraries(HandCursor.o tensorflowlite ${OpenCV_LIBS})
+# lib has 3 file: tensorflowlite.dll.if.lib flatbuffers.lib tensorflowlite.dll
+find_library(TFLITE tensorflowlite.dll.if HINTS ${CMAKE_CURRENT_SOURCE_DIR}/../../tflite-dist/libs/windows_x64/ )
+find_library(FLATBUFFERS flatbuffers  HINTS ${CMAKE_CURRENT_SOURCE_DIR}/../../tflite-dist/libs/windows_x64/ )
+
+add_executable(HandCursor main.cpp modelprocessor.cpp handdetector.cpp keypointdetector.cpp utils.cpp)
+target_link_libraries(HandCursor PRIVATE ${TFLITE} ${FLATBUFFERS} ${OpenCV_LIBS})
+
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../../tflite-dist/libs/windows_x64/tensorflowlite.dll ${CMAKE_BINARY_DIR}/Release/
+)

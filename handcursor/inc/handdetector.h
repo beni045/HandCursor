@@ -5,7 +5,13 @@
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 #include "modelprocessor.h"
+#include "utils.h"
 
+struct TransformData {
+    cv::Point2f offset;
+    cv::Point2f center;
+    double angleRad;
+};
 
 class HandDetector : public ModelProcessor {       
     private:            
@@ -13,6 +19,8 @@ class HandDetector : public ModelProcessor {
         std::vector<float> LoadAnchors(std::string filepath);
         cv::Mat result_;
 
+        TransformData transdata_;
+        
         void ExtraSetup();
 
         void Preprocess();
@@ -22,10 +30,11 @@ class HandDetector : public ModelProcessor {
 
         std::vector<cv::Point> FindKeypoints(int widest_idx);
         cv::Mat TransformPalm(cv::Point wrist, cv::Point middlefinger, float thirdpoint_scale);
-
+        
     public:
         HandDetector(int resize_width, int resize_height, std::string model_path);
         cv::Mat GetResult();
+        void TransformBack(std::vector<cv::Point2f>& inPoints);
 };
 
 

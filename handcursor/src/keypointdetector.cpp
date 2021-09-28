@@ -47,22 +47,26 @@ void KeypointDetector::Preprocess(){
 
 
 void KeypointDetector::Postprocess(){
-    std::cout << "Hand presence: " << *output_tensor2_ << std::endl;
-    std::cout << "Handedness: " << *output_tensor3_ << std::endl;
+    //std::cout << "Hand presence: " << *output_tensor2_ << std::endl;
+    //std::cout << "Handedness: " << *output_tensor3_ << std::endl;
 
-    float scale_x = orig_width_ / resize_width_;
-    float scale_y = orig_height_ / resize_height_;
+    float scale_x = float(orig_width_ )/ float(resize_width_);
+    float scale_y = float(orig_height_) / float(resize_height_);
 
+    std::vector<cv::Point2f> keypoints;
     for(int x=0; x < 63; x+=3){
-        cv::Point kp;
+        cv::Point2f kp;
         kp.x = (output_tensor1_[x] * scale_x);
         kp.y = (output_tensor1_[x+1] * scale_y);
-        std::cout << "Keypoint: " << kp << std::endl;
-        cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);
+        /*std::cout << "Keypoint: " << kp << std::endl;*/
+        /*cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);*/
+        keypoints.push_back(kp);
     }
+    
+    result_ = keypoints;
+}
 
-    cv::imwrite("output.jpg", orig_image_);
-    // cv::waitKey(0);
-
+std::vector<cv::Point2f> KeypointDetector::GetResult(){
+    return result_;
 }
 

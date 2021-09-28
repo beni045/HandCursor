@@ -10,6 +10,7 @@
 class KeypointDetector : public ModelProcessor {       
     private:            
         float* output_tensor3_;
+        std::vector<cv::Point2f> result_;
 
         void Preprocess();
         void Postprocess();
@@ -21,4 +22,5 @@ class KeypointDetector : public ModelProcessor {
 
     public:
         KeypointDetector(int resize_width, int resize_height, std::string model_path);
+        std::vector<cv::Point2f> GetResult();
 };
