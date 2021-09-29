@@ -25,7 +25,7 @@ class HandDetector : public ModelProcessor {
         void ExtraSetup();
 
         void Preprocess();
-        void Postprocess();
+        int8_t Postprocess();
 
         int FindWidest(std::vector<int> threshold_idxs);
 

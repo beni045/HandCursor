@@ -11,6 +11,7 @@
 #include <handdetector.h>
 #include <keypointdetector.h>
 #include <utils.h>
+#include <chrono>
 
 using namespace std;
 using namespace cv;
@@ -53,14 +54,44 @@ int main()
     Mat frame;
     Mat cropped_img;
     vector<Point2f> final_kps;
+    int8_t status;
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+
      for(;;)
      {
            cap >> frame;
+               
            if( frame.empty() ) break; // end of video stream
 
-           handdetector.Process(frame);
+           // Handle no hand detected
+           begin = chrono::steady_clock::now();
+           status = handdetector.Process(frame);
+           end = chrono::steady_clock::now();
+           cout << "palm time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
+           if (status == NO_DETECT){
+               imshow("Keypoint Overlay", frame);
+               if (waitKey(10) == 27) break;
+               cout << "no palm" << endl;
+               continue;
+           }
+           
            cropped_img = handdetector.GetResult();
-           keypointdetector.Process(cropped_img);
+
+           // Handle no hand detected
+           begin = chrono::steady_clock::now();
+           status = keypointdetector.Process(cropped_img);
+           end = chrono::steady_clock::now();
+           cout << "hand time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
+           if (status == NO_DETECT){
+               imshow("Keypoint Overlay", frame);
+               if (waitKey(10) == 27) break;
+               cout << "no hand" << endl;
+               continue;
+           }
+
            final_kps = keypointdetector.GetResult();
            //cout << "\n orig: " << endl;
            //for (auto p : final_kps) {

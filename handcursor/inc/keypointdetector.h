@@ -13,7 +13,7 @@ class KeypointDetector : public ModelProcessor {
         std::vector<cv::Point2f> result_;
 
         void Preprocess();
-        void Postprocess();
+        int8_t Postprocess();
 
         int FindWidest(std::vector<int> threshold_idxs);
 

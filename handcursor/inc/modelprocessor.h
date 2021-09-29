@@ -4,6 +4,7 @@
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
+#include "utils.h"
 #pragma once
 
 class ModelProcessor{       
@@ -29,11 +30,11 @@ class ModelProcessor{
         ModelProcessor(int resize_width, int resize_height, std::string filname);
         ~ModelProcessor();
         
-        void Process(cv::Mat orig_image);
+        int8_t Process(cv::Mat orig_image);
    
     protected:
         virtual void Preprocess() = 0;
         void Inference();
-        virtual void Postprocess() = 0;
+        virtual int8_t Postprocess() = 0;
         
 };

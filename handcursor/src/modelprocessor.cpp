@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
+#include <chrono>
 
 
 #define TFLITE_MINIMAL_CHECK(x)                              \
@@ -41,17 +42,24 @@ void ModelProcessor::Preprocess(){
 }
 
 void ModelProcessor::Inference(){
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    begin = std::chrono::steady_clock::now();
     TFLITE_MINIMAL_CHECK(interpreter_->Invoke() == kTfLiteOk);
+    end = std::chrono::steady_clock::now();
+    std::cout << "inference time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
 }
 
-void ModelProcessor::Postprocess(){
+int8_t ModelProcessor::Postprocess(){
+    return SUCCESS;     // this shouldnt have to be defined?
 }
 
-void ModelProcessor::Process(cv::Mat orig_image){
+int8_t ModelProcessor::Process(cv::Mat orig_image){
     orig_image_ = orig_image;
     orig_width_ = orig_image.cols;
     orig_height_ = orig_image.rows;
     Preprocess();
     Inference();
-    Postprocess();
+    int8_t status = ERROR_CHECK(Postprocess());
+    return status;
 }

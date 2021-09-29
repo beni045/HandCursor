@@ -49,14 +49,14 @@ void HandDetector::Preprocess(){
     memcpy(HandDetector::input_tensor_, preproc_mat, input_buffer_size);
 }
 
-void HandDetector::Postprocess(){
+int8_t HandDetector::Postprocess(){
     // Model output is the following:
     // 1x2944x18 tensor of anchors
     // 1x2944 tensor of confidence for each anchor
 
     const int num_anchors = 2944;
     const int anchor_size = 18;
-    const double threshold_val = 0.7;
+    const double threshold_val = 0.95;
 
     std::vector<int> threshold_idx;
 
@@ -67,6 +67,11 @@ void HandDetector::Postprocess(){
         }
     }
     
+    // Check if theres hand
+    if (threshold_idx.empty()){
+        return NO_DETECT;
+    }
+
     int widest_box_idx = FindWidest(threshold_idx);
 
     std::vector<cv::Point> keypoints = FindKeypoints(widest_box_idx);
@@ -82,7 +87,7 @@ void HandDetector::Postprocess(){
     cv::Mat transformed = TransformPalm(keypoints[0], keypoints[2], 0.7);
 
     result_ = transformed;
-    // result_ = orig_image_;
+    return SUCCESS;
 }
 
 

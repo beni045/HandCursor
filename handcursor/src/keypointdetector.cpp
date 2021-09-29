@@ -46,13 +46,20 @@ void KeypointDetector::Preprocess(){
 }
 
 
-void KeypointDetector::Postprocess(){
-    //std::cout << "Hand presence: " << *output_tensor2_ << std::endl;
-    //std::cout << "Handedness: " << *output_tensor3_ << std::endl;
+int8_t KeypointDetector::Postprocess(){
+    // std::cout << "Hand presence: " << *output_tensor2_ << std::endl;
+    // std::cout << "Handedness: " << *output_tensor3_ << std::endl;
 
-    float scale_x = float(orig_width_ )/ float(resize_width_);
-    float scale_y = float(orig_height_) / float(resize_height_);
+    // Check if hand present
+    const float hand_presence_thresh = 0.9;
+    if (*output_tensor2_ < hand_presence_thresh){
+        return NO_DETECT;
+    }
 
+    const float scale_x = float(orig_width_ )/ float(resize_width_);
+    const float scale_y = float(orig_height_) / float(resize_height_);
+
+    // Load keypoints from model output
     std::vector<cv::Point2f> keypoints;
     for(int x=0; x < 63; x+=3){
         cv::Point2f kp;
@@ -64,6 +71,7 @@ void KeypointDetector::Postprocess(){
     }
     
     result_ = keypoints;
+    return SUCCESS;
 }
 
 std::vector<cv::Point2f> KeypointDetector::GetResult(){
