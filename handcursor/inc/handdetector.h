@@ -18,7 +18,8 @@ class HandDetector : public ModelProcessor {
         std::vector<float> anchors_;
         std::vector<float> LoadAnchors(std::string filepath);
         cv::Mat result_;
-
+        cv::RotatedRect cropRect_;
+        
         TransformData transdata_;
         
         void ExtraSetup();
@@ -35,6 +36,7 @@ class HandDetector : public ModelProcessor {
         HandDetector(int resize_width, int resize_height, std::string model_path);
         cv::Mat GetResult();
         void TransformBack(std::vector<cv::Point2f>& inPoints);
+        cv::RotatedRect GetCropRect();
 };
 
 

@@ -3,7 +3,16 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+
 #define RAD_TO_DEG 57.2958
+
+extern const int8_t SUCCESS;
+extern const int8_t NO_DETECT;
+extern const int8_t FAIL;
+
+
+int8_t ERROR_CHECK(int8_t return_code);
+
 
 double sigmoidfunc(double x);
 

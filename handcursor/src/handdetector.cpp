@@ -11,7 +11,7 @@
 #include <utils.h>
 #include <cstdio>
 
-#define ANCHORS_PATH "C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/models/anchors.csv"
+#define ANCHORS_PATH "../../../models/anchors.csv"
 
 
 HandDetector::HandDetector(int resize_width, 
@@ -194,6 +194,12 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
     cv::Rect ROI(x_offset, y_offset, cropWidth, cropHeight);
     cv::Mat croppedImage = rotated(ROI);   
 
+    // Save rotated rect for display
+    cv::Point2f rect_center;
+    rect_center.x = x_offset + (cropWidth / 2);
+    rect_center.y = y_offset + (cropHeight / 2);
+    cropRect_ = cv::RotatedRect(rect_center, cv::Size(cropWidth, cropHeight), angle);
+
     return croppedImage;
     //return rotated;
 }
@@ -232,4 +238,8 @@ std::vector<float> HandDetector::LoadAnchors(std::string filepath){
 
 cv::Mat HandDetector::GetResult(){
     return result_;
+}
+
+cv::RotatedRect HandDetector::GetCropRect(){
+    return cropRect_;
 }

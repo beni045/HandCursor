@@ -10,15 +10,16 @@
 #include <iostream>
 #include <handdetector.h>
 #include <keypointdetector.h>
+#include <utils.h>
 
 using namespace std;
 using namespace cv;
 
 int main()
 {
-    string image_path = "C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/handcursor/src/sample_hand3.jpg";
-    string palm_detector_path = "C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/models/palm_detection_without_custom_op.tflite";
-    string keypoint_detector_path = "C:/Users/benig/Documents/Projects/Hand_controls_cpp/windows_version/tflite/models/hand_landmark_new.tflite";
+    string image_path = "../../src/sample_hand3.jpg";
+    string palm_detector_path = "../../../models/palm_detection_without_custom_op.tflite";
+    string keypoint_detector_path = "../../../models/hand_landmark_new.tflite";
     
     const int resize_width = 256;
     const int resize_height = 256;
@@ -68,9 +69,16 @@ int main()
            //cout << "\n transormed: " << endl;
            handdetector.TransformBack(final_kps);
            for (auto p : final_kps) {
-               cv::circle(frame, p, 10, Scalar(0, 255, 0), cv::FILLED, 8, 0);
+               int circle_size = int(float(frame.cols) * 0.01);
+               cv::circle(frame, p, circle_size, Scalar(0, 255, 0), cv::FILLED, circle_size, 0);
                //cout << "Kps: " << p << endl;
            }
+           cv::Point2f vertices[4];
+           handdetector.GetCropRect().points(vertices);
+           for (int i = 0; i < 4; i++) {
+               cv::line(frame, vertices[i], vertices[(i + 1) % 4], cv::Scalar(0, 255, 0));
+           }
+           // cv::rectangle(frame, handdetector.GetCropRect().(), cv::Scalar(0, 255, 0));
 
            imshow("Keypoint Overlay", frame);
            if (waitKey(10) == 27) break; // stop capturing by pressing ESC 

@@ -3,11 +3,28 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include "utils.h"
-
+#include <iostream>
+#include <fstream>
+#include <cstdio>
 
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
+
+
+const int8_t SUCCESS = 0;
+const int8_t NO_DETECT = 1;
+const int8_t FAIL = -1;
+
+int8_t ERROR_CHECK(int8_t return_code){
+    if(return_code == FAIL){
+        fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
+        exit(1);  
+    }
+    else{
+        return return_code;
+    }
+  }
 
 double sigmoidfunc(double x){
     double sigmoid = 1.0 / (1.0 + exp(-x));
