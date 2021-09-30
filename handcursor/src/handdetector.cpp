@@ -58,27 +58,45 @@ int8_t HandDetector::Postprocess(){
     const int anchor_size = 18;
     const double threshold_val = 0.95;
 
-    std::vector<int> threshold_idx;
+    /*std::vector<int> threshold_idx;*/
+    double max_conf = 0;
+    int max_conf_idx = 0;
 
     for (int x=0; x < num_anchors; x++){
         double sigm = sigmoidfunc(double(output_tensor2_[x]));
-        if (sigm > threshold_val){
-            threshold_idx.push_back(x);
+        
+        // Try using highest conf score
+        if (sigm > max_conf) {
+            max_conf = sigm;
+            max_conf_idx = x;
         }
+
+        //if (sigm > threshold_val){
+        //    threshold_idx.push_back(x);
+        //}
     }
     
+    //// Check if theres hand
+    //if (threshold_idx.empty()){
+    //    return NO_DETECT;
+    //}
+
+    // implement NMS instead
+    /*int widest_box_idx = FindWidest(threshold_idx);*/
+
     // Check if theres hand
-    if (threshold_idx.empty()){
+    if (max_conf < threshold_val) {
         return NO_DETECT;
     }
 
-    int widest_box_idx = FindWidest(threshold_idx);
+    // test highest conf idx
+    //widest_box_idx = max_conf_idx;
 
-    std::vector<cv::Point> keypoints = FindKeypoints(widest_box_idx);
+    std::vector<cv::Point> keypoints = FindKeypoints(max_conf_idx);
 
     int i = 0;
     for(auto kp : keypoints){
-        //cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);
+        cv::circle(orig_image_, kp, 5, cv::Scalar(255,0,0),cv::FILLED, 8,0);
         //cv::putText(orig_image_,std::to_string(i),kp,cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
         i++;
 
@@ -120,8 +138,8 @@ std::vector<cv::Point> HandDetector::FindKeypoints(int widest_idx){
     // Keypoints are between [widest_idx, 4:]
     for(int x = widest_idx*18 + 4; x < widest_idx*18 + 18; x+=2){
         cv::Point p;
-        p.x = (output_tensor1_[x] + center.x) * scale_orig_x;
-        p.y = (output_tensor1_[x+1] + center.y) * scale_orig_y;
+        p.x = (int)std::round((output_tensor1_[x] + center.x) * scale_orig_x);
+        p.y = (int)std::round((output_tensor1_[x+1] + center.y) * scale_orig_y);
         keypoints.push_back(p);
     }
 
@@ -171,11 +189,9 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
     // wrist and middle finger
     float cropHeight = dist_wrist_middle * 2.5;
     float cropWidth = dist_wrist_middle * 2.5;
-    float x_offset = wrist.x - cropWidth / 2;
+    float x_offset = wrist.x - (cropWidth / 2.0);
+    //float x_offset = (2 * wrist.x) - cropWidth;
     float y_offset = (wrist.y - cropHeight * 0.85) * 0.9; // make sure theres some space below wrist
-
-    // Save offsets for later transformback of keypoints
-    transdata_.offset = cv::Point2f(x_offset, y_offset);
 
     // Limit crop size
     if (x_offset > orig_image_.cols){
@@ -196,14 +212,15 @@ cv::Mat HandDetector::TransformPalm(cv::Point wrist, cv::Point middlefinger, flo
     if ((y_offset + cropHeight) > orig_image_.rows){
         cropHeight = orig_image_.rows - y_offset - 1;
     }
+
+    // Save offsets for later transformback of keypoints
+    transdata_.offset = cv::Point2f(x_offset, y_offset);
+
     cv::Rect ROI(x_offset, y_offset, cropWidth, cropHeight);
     cv::Mat croppedImage = rotated(ROI);   
 
     // Save rotated rect for display
-    cv::Point2f rect_center;
-    rect_center.x = x_offset + (cropWidth / 2);
-    rect_center.y = y_offset + (cropHeight / 2);
-    cropRect_ = cv::RotatedRect(rect_center, cv::Size(cropWidth, cropHeight), angle);
+    cropRect_ = cv::RotatedRect(middlefinger, cv::Size(cropWidth, cropHeight*1.1), angle);
 
     return croppedImage;
     //return rotated;

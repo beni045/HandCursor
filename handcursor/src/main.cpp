@@ -66,11 +66,11 @@ int main()
                
            if( frame.empty() ) break; // end of video stream
 
-           // Handle no hand detected
+           // Handle no palm detected
            begin = chrono::steady_clock::now();
            status = handdetector.Process(frame);
            end = chrono::steady_clock::now();
-           cout << "palm time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
+           //cout << "palm time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
            if (status == NO_DETECT){
                imshow("Keypoint Overlay", frame);
                if (waitKey(10) == 27) break;
@@ -78,13 +78,15 @@ int main()
                continue;
            }
            
+           
+
            cropped_img = handdetector.GetResult();
 
            // Handle no hand detected
            begin = chrono::steady_clock::now();
            status = keypointdetector.Process(cropped_img);
            end = chrono::steady_clock::now();
-           cout << "hand time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
+           //cout << "hand time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
            if (status == NO_DETECT){
                imshow("Keypoint Overlay", frame);
                if (waitKey(10) == 27) break;
@@ -99,7 +101,7 @@ int main()
            //}
            //cout << "\n transormed: " << endl;
            handdetector.TransformBack(final_kps);
-           for (auto p : final_kps) {
+           for (auto& p : final_kps) {
                int circle_size = int(float(frame.cols) * 0.01);
                cv::circle(frame, p, circle_size, Scalar(0, 255, 0), cv::FILLED, circle_size, 0);
                //cout << "Kps: " << p << endl;
@@ -110,7 +112,7 @@ int main()
                cv::line(frame, vertices[i], vertices[(i + 1) % 4], cv::Scalar(0, 255, 0));
            }
            // cv::rectangle(frame, handdetector.GetCropRect().(), cv::Scalar(0, 255, 0));
-
+           
            imshow("Keypoint Overlay", frame);
            if (waitKey(10) == 27) break; // stop capturing by pressing ESC 
      }
