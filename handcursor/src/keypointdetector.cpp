@@ -63,12 +63,14 @@ int8_t KeypointDetector::Postprocess(){
     std::vector<cv::Point2f> keypoints;
     for(int x=0; x < 63; x+=3){
         cv::Point2f kp;
-        kp.x = (output_tensor1_[x] * scale_x);
-        kp.y = (output_tensor1_[x+1] * scale_y);
-        /*std::cout << "Keypoint: " << kp << std::endl;*/
-        /*cv::circle(orig_image_, kp, 10, cv::Scalar(0,255,0),cv::FILLED, 8,0);*/
+        kp.x = (int)std::round((output_tensor1_[x] * scale_x));
+        kp.y = (int)std::round((output_tensor1_[x+1] * scale_y));
+        // std::cout << kp;
+        // cv::circle(orig_image_, kp, 5, cv::Scalar(0,255,0),cv::FILLED, 8,0);
         keypoints.push_back(kp);
     }
+
+
     
     result_ = keypoints;
     return SUCCESS;
