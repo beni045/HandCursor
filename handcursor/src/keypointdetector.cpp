@@ -51,7 +51,7 @@ int8_t KeypointDetector::Postprocess(){
     // std::cout << "Handedness: " << *output_tensor3_ << std::endl;
 
     // Check if hand present
-    const float hand_presence_thresh = 0.9;
+    const float hand_presence_thresh = 0.6;
     if (*output_tensor2_ < hand_presence_thresh){
         return NO_DETECT;
     }
@@ -65,11 +65,15 @@ int8_t KeypointDetector::Postprocess(){
         cv::Point2f kp;
         kp.x = (int)std::round((output_tensor1_[x] * scale_x));
         kp.y = (int)std::round((output_tensor1_[x+1] * scale_y));
-        // std::cout << kp;
-        // cv::circle(orig_image_, kp, 5, cv::Scalar(0,255,0),cv::FILLED, 8,0);
+        //std::cout << "kp: " << output_tensor1_[x] << ", " << output_tensor1_[x + 1] << std::endl;
+        cv::circle(orig_image_, kp, 5, cv::Scalar(0,255,0),cv::FILLED, 8,0);
         keypoints.push_back(kp);
     }
 
+    float dist_wrist_middle = cv::norm(keypoints[0] - keypoints[9]);
+   
+    //std::cout << "dist wrist middel 2: " << dist_wrist_middle << std::endl;
+    //std::cout << "wrist, middle kps: " << keypoints[0] << keypoints[9] << std::endl;
 
     
     result_ = keypoints;

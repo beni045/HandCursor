@@ -12,6 +12,7 @@
 #include <keypointdetector.h>
 #include <utils.h>
 #include <chrono>
+#include <thread>
 
 using namespace std;
 using namespace cv;
@@ -59,28 +60,42 @@ int main()
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
+    bool FIND_PALM = true;
 
      for(;;)
      {
+           //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
            cap >> frame;
                
            if( frame.empty() ) break; // end of video stream
 
-           // Handle no palm detected
-           begin = chrono::steady_clock::now();
-           status = handdetector.Process(frame);
-           end = chrono::steady_clock::now();
-           //cout << "palm time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
-           if (status == NO_DETECT){
+           if (FIND_PALM) {
+               // Handle no palm detected
+               begin = chrono::steady_clock::now();
+               status = handdetector.Process(frame);
+               end = chrono::steady_clock::now();
+               //cout << "palm time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
+               if (status == NO_DETECT) {
+                   imshow("Keypoint Overlay", frame);
+                   if (waitKey(10) == 27) break;
+                   cout << "no palm" << endl;
+                   continue;
+               }
+           }
+
+           else {
+               handdetector.ReadFrame(frame);
+               //handdetector.PostprocessExternalKps(final_kps[0], final_kps[9]);
+               handdetector.TransformPalm2(final_kps, 1.2);
+               /*cropped_img = handdetector.GetResult();*/
                imshow("Keypoint Overlay", frame);
                if (waitKey(10) == 27) break;
-               cout << "no palm" << endl;
-               continue;
            }
-           
            
 
            cropped_img = handdetector.GetResult();
+
+
 
            // Handle no hand detected
            begin = chrono::steady_clock::now();
@@ -90,10 +105,14 @@ int main()
            if (status == NO_DETECT){
                imshow("Keypoint Overlay", frame);
                if (waitKey(10) == 27) break;
+
                cout << "no hand" << endl;
+               FIND_PALM = true;
                continue;
            }
-
+           else {
+               FIND_PALM = false;
+           }
            final_kps = keypointdetector.GetResult();
            //cout << "\n orig: " << endl;
            //for (auto p : final_kps) {
@@ -106,6 +125,7 @@ int main()
                cv::circle(frame, p, circle_size, Scalar(0, 255, 0), cv::FILLED, circle_size, 0);
                //cout << "Kps: " << p << endl;
            }
+           cv::line(frame, final_kps[0], final_kps[9], cv::Scalar(0, 0, 255));
            cv::Point2f vertices[4];
            handdetector.GetCropRect().points(vertices);
            for (int i = 0; i < 4; i++) {
