@@ -88,7 +88,7 @@ int main()
                //handdetector.PostprocessExternalKps(final_kps[0], final_kps[9]);
                handdetector.TransformPalm2(final_kps, 1.2);
                /*cropped_img = handdetector.GetResult();*/
-               imshow("Keypoint Overlay", frame);
+               // imshow("Keypoint Overlay", frame);
                if (waitKey(10) == 27) break;
            }
            
@@ -128,12 +128,15 @@ int main()
            cv::line(frame, final_kps[0], final_kps[9], cv::Scalar(0, 0, 255));
            cv::Point2f vertices[4];
            handdetector.GetCropRect().points(vertices);
-           for (int i = 0; i < 4; i++) {
-               cv::line(frame, vertices[i], vertices[(i + 1) % 4], cv::Scalar(0, 255, 0));
-           }
+           //for (int i = 0; i < 4; i++) {
+           //    cv::line(frame, vertices[i], vertices[(i + 1) % 4], cv::Scalar(0, 255, 0));
+           //}
            // cv::rectangle(frame, handdetector.GetCropRect().(), cv::Scalar(0, 255, 0));
            
-           imshow("Keypoint Overlay", frame);
+           Mat flipped;               // dst must be a different Mat
+           flip(cropped_img, flipped, 1);
+
+           imshow("Keypoint Overlay", flipped);
            if (waitKey(10) == 27) break; // stop capturing by pressing ESC 
      }
     // return 0;

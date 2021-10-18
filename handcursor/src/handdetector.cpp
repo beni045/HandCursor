@@ -420,5 +420,20 @@ void HandDetector::TransformPalm2(std::vector<cv::Point2f> keypoints, float scal
     result_ = cropped_image;
     /*cv::imwrite("cropped.png", result_);*/
 
+    // Overlay crop bounding box
+    auto min_comp = cv::Point2f(max.x, min.y);
+    auto max_comp = cv::Point2f(min.x, max.y);
+
+    auto rotated_points = std::vector<cv::Point2f> { min, min_comp, max, max_comp };
+
+    for (auto& p : rotated_points) {
+        p = rotatePoint(p, transdata_.center, transdata_.angleRad);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        cv::line(orig_image_, rotated_points[i], rotated_points[(i + 1) % 4], cv::Scalar(0, 255, 0));
+    }
+
+
     return;
 }
