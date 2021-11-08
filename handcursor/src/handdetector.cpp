@@ -359,6 +359,10 @@ void HandDetector::TransformPalm2(std::vector<cv::Point2f> keypoints, float scal
     cv::Point2f max = cv::Point2f(0, 0);
     cv::Point2f min = cv::Point2f(orig_image_.cols, orig_image_.rows);
 
+    //std::cout << "min1: " << min << std::endl;
+    //std::cout << "max1: " << max << std::endl;
+
+
     for (const auto p : keypoints) {
         if (p.x > max.x) {
             max.x = p.x;
@@ -374,14 +378,37 @@ void HandDetector::TransformPalm2(std::vector<cv::Point2f> keypoints, float scal
         }
     }
 
-    // Scale bounding box
-    min /= scale;
-    max *= scale;
+    //for (const auto p : keypoints) {
+    //    std::cout << "Point: " << p << std::endl;
+    //}
 
+
+
+
+
+    //std::cout << "min2: " << min << std::endl;
+    //std::cout << "max2: " << max << std::endl;
+
+    // Scale bounding box
+    //min /= scale;
+
+    /*
+    max *= scale;
+    min -= (max * scale) - max;
+    */
+    max += cv::Point2f(scale, scale);
+    min -= cv::Point2f(scale, scale);
 
     // Prevent error-feedback when cropping
     int bbox_width = max.x - min.x;
     int bbox_height = max.y - min.y;
+
+    //Debug
+    float x, y;
+    x = min.x + ((max.x - min.x) / 2);
+    y = min.y + ((max.y - min.y) / 2);
+    auto center_before = cv::Point2f(x, y);
+
     if (bbox_width > bbox_height) {
         float diff = (bbox_width - bbox_height) / 2;
         min.y -= diff;
@@ -392,6 +419,16 @@ void HandDetector::TransformPalm2(std::vector<cv::Point2f> keypoints, float scal
         min.x -= diff;
         max.x += diff;
     }
+
+    x = min.x + ((max.x - min.x) / 2);
+    y = min.y + ((max.y - min.y) / 2);
+    auto center_after = cv::Point2f(x, y);
+
+    //std::cout << "Before: " << center_before << std::endl;
+    //std::cout << "After: " << center_after<< std::endl;
+
+    std::cout << "Diff: " << center_before - center_after << std::endl;
+
 
 
     // Limit crop dims to image size

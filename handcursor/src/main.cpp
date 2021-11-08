@@ -53,6 +53,7 @@ int main()
     }
 
     Mat frame;
+    Mat flipped;
     Mat cropped_img;
     vector<Point2f> final_kps;
     int8_t status;
@@ -76,7 +77,8 @@ int main()
                end = chrono::steady_clock::now();
                //cout << "palm time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
                if (status == NO_DETECT) {
-                   imshow("Keypoint Overlay", frame);
+                   flip(frame, flipped, 1);
+                   imshow("Keypoint Overlay", flipped);
                    if (waitKey(10) == 27) break;
                    cout << "no palm" << endl;
                    continue;
@@ -86,7 +88,7 @@ int main()
            else {
                handdetector.ReadFrame(frame);
                //handdetector.PostprocessExternalKps(final_kps[0], final_kps[9]);
-               handdetector.TransformPalm2(final_kps, 1.2);
+               handdetector.TransformPalm2(final_kps, 35);
                /*cropped_img = handdetector.GetResult();*/
                // imshow("Keypoint Overlay", frame);
                if (waitKey(10) == 27) break;
@@ -103,7 +105,8 @@ int main()
            end = chrono::steady_clock::now();
            //cout << "hand time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
            if (status == NO_DETECT){
-               imshow("Keypoint Overlay", frame);
+               flip(frame, flipped, 1);
+               imshow("Keypoint Overlay", flipped);
                if (waitKey(10) == 27) break;
 
                cout << "no hand" << endl;
@@ -133,9 +136,8 @@ int main()
            //}
            // cv::rectangle(frame, handdetector.GetCropRect().(), cv::Scalar(0, 255, 0));
            
-           Mat flipped;               // dst must be a different Mat
-           flip(cropped_img, flipped, 1);
 
+           flip(frame, flipped, 1);
            imshow("Keypoint Overlay", flipped);
            if (waitKey(10) == 27) break; // stop capturing by pressing ESC 
      }
