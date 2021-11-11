@@ -88,7 +88,7 @@ int main()
            else {
                handdetector.ReadFrame(frame);
                //handdetector.PostprocessExternalKps(final_kps[0], final_kps[9]);
-               handdetector.TransformPalm2(final_kps, 35);
+               handdetector.TransformPalm2(final_kps, 1.25);
                /*cropped_img = handdetector.GetResult();*/
                // imshow("Keypoint Overlay", frame);
                if (waitKey(10) == 27) break;

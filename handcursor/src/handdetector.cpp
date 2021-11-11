@@ -396,12 +396,23 @@ void HandDetector::TransformPalm2(std::vector<cv::Point2f> keypoints, float scal
     max *= scale;
     min -= (max * scale) - max;
     */
-    max += cv::Point2f(scale, scale);
-    min -= cv::Point2f(scale, scale);
+
+   float x_shift = (max.x - min.x) * (scale - 1);
+   float y_shift = (max.y - min.y) * (scale - 1);
+
+   auto shift_factor = cv::Point2f(x_shift, y_shift);
+
+   max += shift_factor;
+   min -= shift_factor;
+   
+    // max += cv::Point2f(scale, scale);
+    // min -= cv::Point2f(scale, scale);
 
     // Prevent error-feedback when cropping
     int bbox_width = max.x - min.x;
     int bbox_height = max.y - min.y;
+
+
 
     //Debug
     float x, y;
