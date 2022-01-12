@@ -77,6 +77,7 @@ int main()
                end = chrono::steady_clock::now();
                //cout << "palm time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
                if (status == NO_DETECT) {
+
                    flip(frame, flipped, 1);
                    imshow("Keypoint Overlay", flipped);
                    if (waitKey(10) == 27) break;
@@ -105,6 +106,7 @@ int main()
            end = chrono::steady_clock::now();
            //cout << "hand time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << endl;
            if (status == NO_DETECT){
+               handdetector.ResetPredictor();
                flip(frame, flipped, 1);
                imshow("Keypoint Overlay", flipped);
                if (waitKey(10) == 27) break;

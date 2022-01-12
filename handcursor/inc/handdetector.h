@@ -13,6 +13,19 @@ struct TransformData {
     double angleRad;
 };
 
+struct PredictData {
+    std::vector<cv::Point2f> pos1;
+    std::vector<cv::Point2f> pos2;
+
+    enum STATE {
+        STORE_FIRST = 0,
+        STORE_SECOND = 1,
+        PREDICT = 2
+    };
+
+    STATE state_ = STORE_FIRST;
+};
+
 class HandDetector : public ModelProcessor {       
     private:            
         std::vector<float> anchors_;
@@ -20,8 +33,9 @@ class HandDetector : public ModelProcessor {
         cv::Mat result_;
         cv::RotatedRect cropRect_;
         int last_idx_;
-        
+
         TransformData transdata_;
+        PredictData predictdata_;
         
         void ExtraSetup();
 
@@ -32,6 +46,9 @@ class HandDetector : public ModelProcessor {
 
         std::vector<cv::Point> FindKeypoints(int target_idx);
         cv::Mat TransformPalm(cv::Point wrist, cv::Point middlefinger, float scale);
+
+        void PredictPosition(cv::Point2f& min, cv::Point2f& max);
+
        
         
     public:
@@ -42,6 +59,7 @@ class HandDetector : public ModelProcessor {
         void PostprocessExternalKps(cv:: Point2f wrist, cv::Point2f middlefinger);
         void ReadFrame(cv::Mat frame);
         void TransformPalm2(std::vector<cv::Point2f> keypoints, float scale);
+        void HandDetector::ResetPredictor();
 };
 
 

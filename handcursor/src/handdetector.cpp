@@ -44,9 +44,7 @@ void HandDetector::Preprocess(){
 
     // Copy mat data to input tensor buffer
     std::size_t input_buffer_size = resized_rgb_normalized.total() * resized_rgb_normalized.elemSize();
-
     float* preproc_mat = resized_rgb_normalized.ptr<float>(0);
-    
     memcpy(HandDetector::input_tensor_, preproc_mat, input_buffer_size);
 }
 
@@ -294,6 +292,7 @@ cv::RotatedRect HandDetector::GetCropRect(){
     return cropRect_;
 }
 
+
 void HandDetector::PostprocessExternalKps(cv:: Point2f wrist, cv::Point2f middlefinger){
     cv::Mat transformed = TransformPalm(wrist, middlefinger, 1);
     std::cout << "^ 2nd type" << std::endl;
@@ -438,9 +437,11 @@ void HandDetector::TransformPalm2(std::vector<cv::Point2f> keypoints, float scal
     //std::cout << "Before: " << center_before << std::endl;
     //std::cout << "After: " << center_after<< std::endl;
 
-    std::cout << "Diff: " << center_before - center_after << std::endl;
+    //std::cout << "Diff: " << center_before - center_after << std::endl;
 
 
+    // Predict location 
+    PredictPosition(min, max);
 
     // Limit crop dims to image size
     if (max.x > rotated.cols) {
@@ -483,5 +484,56 @@ void HandDetector::TransformPalm2(std::vector<cv::Point2f> keypoints, float scal
     }
 
 
+    return;
+}
+
+
+void HandDetector::PredictPosition(cv::Point2f& min, cv::Point2f& max) {
+
+    float gain = 0.5;
+
+    switch (predictdata_.state_) {
+
+        // Store first
+        case(predictdata_.STORE_FIRST):
+            predictdata_.pos1 = { min, max };
+            predictdata_.state_ = predictdata_.STORE_SECOND;
+            break;
+
+        // Store second
+        case(predictdata_.STORE_SECOND):
+            predictdata_.pos2 = { min, max };
+            predictdata_.state_ = predictdata_.PREDICT;
+            break;
+
+        // Predict
+        case(predictdata_.PREDICT):
+            //min.x += (predictdata_.pos1[0].x - predictdata_.pos2[0].x) * gain;
+            //min.y += (predictdata_.pos1[0].y - predictdata_.pos2[0].y) * gain;
+
+            //max.x += (predictdata_.pos1[1].x - predictdata_.pos2[1].x) * gain;
+            //max.y += (predictdata_.pos1[1].y - predictdata_.pos2[1].y) * gain;
+
+            min.x += (predictdata_.pos2[0].x - predictdata_.pos1[0].x) * gain;
+            min.y += (predictdata_.pos2[0].y - predictdata_.pos1[0].y) * gain;
+
+            max.x += (predictdata_.pos2[1].x - predictdata_.pos1[1].x) * gain;
+            max.y += (predictdata_.pos2[1].y - predictdata_.pos1[1].y) * gain;
+
+            //std::cout << "pos1: " << predictdata_.pos1 << std::endl;
+            //std::cout << "pos2: " << predictdata_.pos2 << std::endl;
+            //std::cout << "predicted: " << min << "  " << max << std::endl;
+
+            predictdata_.pos1 = predictdata_.pos2;
+            predictdata_.pos2 = { min, max };
+
+            break;
+
+        }
+    return;
+}
+
+void HandDetector::ResetPredictor(){
+    predictdata_.state_ = predictdata_.STORE_FIRST;
     return;
 }
